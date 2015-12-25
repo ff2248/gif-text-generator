@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <meta http-equiv="X-UA-Compatible" content="IE=edge">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>Dashboard</title>
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" integrity="sha384-1q8mTJOASx8j1Au+a5WDVnPi2lkFfwwEAa8hDDdjZlpLegxhjVME1fgjWPGmkzs7" crossorigin="anonymous">
+
+  <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap-theme.min.css" integrity="sha384-fLW2N01lMqjakBkx3l/M9EahuwpSfeNvV63J5ezn3uZzapT0u7EYsXMjQV+0En5r" crossorigin="anonymous">
+  <script src="https://code.jquery.com/jquery-2.1.4.min.js"></script>
+
+  <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/js/bootstrap.min.js" integrity="sha384-0mSbJDEHialfmuBBQP6A4Qrprq5OVfW37PRR3j5ELqxss1yVqOtnepnHVP9aJ7xS" crossorigin="anonymous"></script>
+
+  <script src='js/gif.js'></script>
+</head>
+<body>
+
+<nav class="navbar navbar-inverse">
+  <div class="container">
+    <div class="navbar-header">
+      <button type="button" class="navbar-toggle collapsed" data-toggle="collapse" data-target="#navbar" aria-expanded="false" aria-controls="navbar">
+        <span class="sr-only">Toggle navigation</span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+        <span class="icon-bar"></span>
+      </button>
+      <a href="#" class="navbar-brand">GIF generator</a>
+    </div>
+  </div>
+</nav>
+
+<div class="container master-container">
+  <div class="row">
+    <div class="col-md-12">
+
+      <form class="form-horizontal" id="text-generator-form">
+        <div class="form-group">
+          <label for="inputTitle" class="col-sm-2 control-label">Title</label>
+          <div class="col-sm-10">
+            <input type="text" class="form-control" id="inputTitle" placeholder="Title" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label for="inputItems" class="col-sm-2 control-label">Items</label>
+          <div class="col-sm-10">
+            <textarea class="form-control"  id="inputItems" rows="3" required></textarea>
+          </div>
+        </div>
+        <div class="form-group">
+          <div class="col-sm-offset-2 col-sm-10">
+            <button class="btn btn-primary" id="btnGenerator">Generator</button>
+            <button class="btn btn-default" id="btnPreview">Preview</button>
+          </div>
+        </div>
+      </form>
+
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="col-md-6">
+      <div class="panel panel-default" id="panelPreview">
+        <div class="panel-heading">
+          <h3 class="panel-title">Preview</h3>
+        </div>
+        <div class="panel-body">
+          <canvas id="canvasPreview" style="display: none;"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <div class="col-md-6">
+      <div class="panel panel-default" id="panelResult">
+        <div class="panel-heading">
+          <h3 class="panel-title">Result</h3>
+        </div>
+        <div class="panel-body">
+          <img src="#" style="display: none;" id="imgResult" />
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  var inputTitle = document.getElementById("inputTitle"),
+      inputItems = document.getElementById("inputItems"),
+      btnGenerator = document.getElementById("btnGenerator"),
+      btnPreview = document.getElementById("btnPreview"),
+      imgResult = document.getElementById("imgResult"),
+      color = "white",
+      width = 470,
+      height = 470,
+      speed = 50,
+      titleFont = "50px Georgia",
+      itemFont = "30px Georgia",
+      titleStyle = "black",
+      itemStyle = "black",
+      canvas,
+      ctx,
+      gif;
+
+      btnGenerator.addEventListener("click", btnGeneratorClick);
+      btnPreview.addEventListener("click", btnPreviewClick);
+
+  initValue();
+
+  function initValue(){
+    inputTitle.value = "聖誕節要幹麻？";
+    inputItems.value = "吃冰,睡覺,看雪,打LOL,游泳,發呆";
+  }
+
+  function btnGeneratorClick(e) {
+    e.preventDefault();
+    this.disabled = true;
+    title = inputTitle.value;
+    items = inputItems.value.split(",")
+
+    gif = new GIF({
+      workers: 100,
+      quality: 0,
+      workerScript: "js/gif.worker.js"
+    });
+
+    createCanvas(width, height);
+
+    fillBackground(canvas, ctx, color);
+    fillTitle(title, canvas, ctx, titleFont, titleStyle);
+    items.forEach(fillItemsAndAddFrame);
+    generatorGIF();
+  };
+
+  function btnPreviewClick(e){
+    e.preventDefault();
+    preview();
+  }
+
+  function createCanvas(width, height){
+    canvas = document.createElement('canvas'),
+    ctx = canvas.getContext('2d');
+    canvas.width = width;
+    canvas.height = height;
+  }
+
+  function fillBackground(canvas, context, color) {
+    context.rect(0, 0, canvas.width, canvas.height);
+    context.fillStyle = color;
+    context.fill();
+  }
+
+  function fillTitle(title, canvas, context, font, style) {
+    context.font = font;
+    context.fillStyle = style;
+    context.textAlign="center";
+    context.fillText(title, canvas.width/2, 100);
+  }
+
+  function fillItemsAndAddFrame(element) {
+    var canvas_clone = cloneCanvas(canvas),
+        ctx_clone = canvas_clone.getContext("2d");
+
+    fillItem(element, canvas_clone, ctx_clone, itemFont, itemStyle)
+    gif.addFrame(canvas_clone, {delay: speed, copy: false});
+  }
+
+  function fillItem(item, canvas, context, font, style) {
+    context.font = font;
+    context.fillStyle = style;
+    context.textAlign="center";
+    context.fillText(item, canvas.width/2, canvas.height/2);
+  }
+
+  function cloneCanvas(oldCanvas) {
+    var newCanvas = document.createElement('canvas'),
+        context = newCanvas.getContext('2d');
+
+    newCanvas.width = oldCanvas.width;
+    newCanvas.height = oldCanvas.height;
+
+    context.drawImage(oldCanvas, 0, 0);
+
+    return newCanvas;
+  }
+
+  function generatorGIF(){
+    gif.on('finished', function(blob) {
+      imgResult.src = URL.createObjectURL(blob);
+      imgResult.style.display = 'block';
+      btnGenerator.disabled = false;
+    });
+
+    gif.render();
+  }
+
+  function preview(){
+    title = inputTitle.value;
+    item = inputItems.value.split(",")[0];
+
+    canvasPreview = document.getElementById("canvasPreview");
+
+    canvasPreview.width = width;
+    canvasPreview.height = height;
+
+    ctxPreview = canvasPreview.getContext("2d");
+    ctxPreview.clearRect(0, 0, canvasPreview.width, canvasPreview.height);
+    fillBackground(canvasPreview, ctxPreview, color);
+    fillTitle(title, canvasPreview, ctxPreview, titleFont, titleStyle);
+
+    fillItem(item, canvasPreview, ctxPreview, itemFont, itemStyle);
+
+    canvasPreview.style.display = 'block';
+  }
+</script>
+
+</body>
+</html>
